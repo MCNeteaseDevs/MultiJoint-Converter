@@ -10,7 +10,6 @@ var Need_BoneMap = {};
 var base_translate_bone_map = {
     // '原骨骼名称': '新骨骼名称',
     root: "root",
-    player: "root",
     body: "",
     body_down: "waist",
     body_mid: "body",
@@ -508,11 +507,14 @@ function TranslateAnimation(super_animation, NewAnimation) {
         //console.log('super修正枢轴位置帧数据:', translate_bone_name, need_bone_origin);
         var motion_origin = vectorSubtract(need_bone_origin, now_bone_origin);
         if (new Vector3(motion_origin[0] + motion_origin[1] + motion_origin[2]).length() <= 0) return;
+        var new_position = {};
         time_rot.forEach(time => {
             var keyframe_data = SuperGetFrame(NowAnimators[new_bone_name], null, time, "position", false, false);
             var position = dataPointToArray(keyframe_data.data_points);
+            var old_pos = position;
             var rotation = second_frame_rotation_frame[time];
             //console.log('原始位置帧数据:', time, position);
+            console.log(motion_origin);
             var inverse_motion_origin = [-motion_origin[0], -motion_origin[1], -motion_origin[2]];
 
             var direcion = WorldXYZRotateToXY(normalize(motion_origin), -rotation[0], rotation[1], rotation[2]);
@@ -523,13 +525,21 @@ function TranslateAnimation(super_animation, NewAnimation) {
             position = vectorAdd(position, the_motion);
             //console.log('旋转角向量:', new_bone_name, time, rotation, direcion, dir_length, the_motion, motion_origin);
 
-            //console.log(`修正后pos`, translate_bone_name, position);
+            console.log(`修正后pos`, translate_bone_name, vectorSubtract(position, old_pos));
+
+            new_position[time] = position;
+        });
+        
+        time_rot.forEach(time => {
+            var keyframe_data = SuperGetFrame(NowAnimators[new_bone_name], null, time, "position", false, false);
+            
+            var position = new_position[time];
 
             keyframe_data.data_points[0].x = position[0];
             keyframe_data.data_points[0].y = position[1];
             keyframe_data.data_points[0].z = position[2];
 
-            new_bone.addKeyframe(keyframe_data);
+            //new_bone.addKeyframe(keyframe_data);
         });
     });
 
@@ -543,7 +553,7 @@ function CreateAnimation(super_animation) {
             blend_weight: super_animation.blend_weight,
             length: super_animation.length,
             loop: super_animation.loop,
-            name: super_animation.name + '_super',
+            name: super_animation.name + '_4d',
             override: super_animation.override,
             path: `translate_animation.json`,
             snapping: super_animation.snapping
